@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APT 훈련용 대량 메일 발송기</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: auto; 
+            background: #fff; 
+            border-radius: 15px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+        
+        .main-content { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 0;
+            min-height: 600px;
+        }
+        
+        .form-section { 
+            padding: 30px; 
+            background: #f8f9fa;
+        }
+        .log-section { 
+            padding: 30px; 
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .log-section .section-title { color: #00ff00; border-color: #00ff00; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+            color: #555;
+        }
+        
+        input[type="text"], input[type="email"], input[type="password"], textarea, input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea { resize: vertical; }
+        #recipients { height: 120px; }
+        #htmlBody { height: 500px; font-family: 'Courier New', monospace; }
+        
+        .recipients-section {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fafafa;
+        }
+        
+        .upload-area {
+            text-align: center;
+            padding: 20px;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover { background: #f0f4ff; }
+        .upload-area.dragover { background: #e6f0ff; border-color: #4a5fc7; }
+        
+        .file-input { display: none; }
+        .upload-text { color: #667eea; font-weight: 600; margin-bottom: 10px; }
+        .upload-hint { color: #888; font-size: 0.9em; }
+        
+        .button-group { display: flex; gap: 10px; margin-top: 20px; }
+        
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+        .btn-primary:disabled { background: #ccc; transform: none; box-shadow: none; cursor: not-allowed; }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover { background: #5a6268; }
+        
+        #status { 
+            height: 400px; 
+            overflow-y: auto; 
+            white-space: pre-wrap; 
+            font-family: 'Courier New', monospace; 
+            font-size: 13px;
+            line-height: 1.4;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            background: #000;
+        }
+        
+        .email-count {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        /* Editor Tabs Styles */
+        .editor-tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 0;
+        }
+        
+        .tab-btn {
+            background: #f8f9fa;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-radius: 8px 8px 0 0;
+            margin-right: 2px;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn:hover {
+            background: #e9ecef;
+            color: #333;
+        }
+        
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .editor-content {
+            border: 2px solid #e0e0e0;
+            border-top: none;
+            border-radius: 0 8px 8px 8px;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 0;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .tab-content textarea {
+            border: none;
+            border-radius: 0 0 8px 8px;
+            height: 500px;
+            resize: vertical;
+        }
+        
+        .html-preview {
+            padding: 0;
+            min-height: 300px;
+            background: white;
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+            border: 1px solid #f0f0f0;
+            position: relative;
+        }
+        
+        .preview-iframe {
+            width: 100%;
+            height: 300px;
+            border: none;
+            background: white;
+        }
+        
+        .preview-placeholder {
+            color: #999;
+            font-style: italic;
+            text-align: center;
+            padding: 50px 20px;
+        }
+        
+        .text-controls {
+            padding: 15px;
+            background: #f8f9fa;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .btn-convert {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-convert:hover {
+            background: #218838;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .button-group { flex-direction: column; }
+            .editor-tabs { flex-wrap: wrap; }
+            .tab-btn { flex: 1; margin-bottom: 2px; }
+            .text-controls { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>APT 훈련용 메일 발송기</h1>
+            <p>대량 메일 발송 및 실시간 모니터링 시스템</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="form-section">
+                <h2 class="section-title">메일 설정</h2>
+                
+                <form id="mailForm">
+                    <div class="form-group">
+                        <label for="campaignName">사나리오 명</label>
+                        <input type="text" id="campaignName" name="campaignName" placeholder="회사명 입력" required>
+                        <small style="color: #666; font-size: 0.85em; margin-top: 5px; display: block;">
+                        </small>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="senderName">발신자 이름</label>
+                            <input type="text" id="senderName" name="senderName" placeholder="발신자 명 입력하면" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">메일 제목</label>
+                            <input type="text" id="subject" name="subject" placeholder="훈련 메일 제목 입력" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="senderEmail">발신자 Gmail 주소</label>
+                            <input type="email" id="senderEmail" name="senderEmail" placeholder="발송 메일 주소 입력(도메인 포함)" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="appPassword">Google 앱 비밀번호</label>
+                            <input type="text" id="appPassword" name="appPassword" placeholder="16자리 앱 비밀번호" required>
+                            <small style="color: #666; font-size: 0.85em; margin-top: 5px; display: block;">
+                                - <a href="https://myaccount.google.com/security" target="_blank" style="color: #667eea;">Google 계정 보안</a> → 2단계 인증 → 앱 비밀번호에서 발급
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="recipients-section">
+                        <label>수신자 목록</label>
+                        
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-text">Excel 파일 업로드</div>
+                            <div class="upload-hint">파일을 드래그하거나 클릭하여 업로드 (E-Mail 컬럼 필요)</div>
+                            <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="recipients">또는 직접 입력 (쉼표 또는 줄바꿈으로 구분)</label>
+                            <textarea id="recipients" name="recipients" placeholder="user1@example.com, user2@example.com"></textarea>
+                        </div>
+                        
+                        <div id="emailCount" class="email-count" style="display: none;">
+                            총 <span id="countNumber">0</span>개의 이메일 주소가 준비되었습니다.
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>메일 본문 작성</label>
+                        
+                        <div class="editor-tabs">
+                            <button type="button" class="tab-btn active" data-tab="html">HTML 코드</button>
+                            <button type="button" class="tab-btn" data-tab="preview">미리보기</button>
+                            <button type="button" class="tab-btn" data-tab="text">텍스트 편집</button>
+                        </div>
+                        
+                        <div class="editor-content">
+                            <div id="htmlTab" class="tab-content active">
+                                <textarea id="htmlBody" name="htmlBody" placeholder="훈련 메일용 HTML 코드를 입력하세요." required></textarea>
+                            </div>
+                            
+                            <div id="previewTab" class="tab-content">
+                                <div id="htmlPreview" class="html-preview">
+                                    <iframe id="previewFrame" class="preview-iframe" srcdoc="<div style='padding: 20px; color: #999; text-align: center; font-family: Arial, sans-serif;'>HTML 코드를 입력하면 여기에 미리보기가 표시됩니다.</div>"></iframe>
+                                </div>
+                            </div>
+                            
+                            <div id="textTab" class="tab-content">
+                                <textarea id="textBody" placeholder="일반 텍스트를 입력하세요. HTML로 자동 변환됩니다."></textarea>
+                                <div class="text-controls">
+                                    <button type="button" id="textToHtml" class="btn-convert">텍스트 → HTML 변환</button>
+                                    <button type="button" id="htmlToText" class="btn-convert">HTML → 텍스트 변환</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="button" id="clearBtn" class="btn-secondary">초기화</button>
+                        <button type="submit" id="submitBtn" class="btn-primary">발송 시작</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="log-section">
+                <h2 class="section-title">발송 모니터링</h2>
+                <div id="status">시스템 준비 완료. 메일 발송을 시작하세요...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('mailForm');
+        const statusDiv = document.getElementById('status');
+        const submitBtn = document.getElementById('submitBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const uploadArea = document.getElementById('uploadArea');
+        const excelFile = document.getElementById('excelFile');
+        const recipients = document.getElementById('recipients');
+        const emailCount = document.getElementById('emailCount');
+        const countNumber = document.getElementById('countNumber');
+        
+        // Editor elements
+        const htmlBody = document.getElementById('htmlBody');
+        const textBody = document.getElementById('textBody');
+        const htmlPreview = document.getElementById('htmlPreview');
+        const textToHtmlBtn = document.getElementById('textToHtml');
+        const htmlToTextBtn = document.getElementById('htmlToText');
+
+        // Tab functionality
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                
+                // Remove active class from all tabs and contents
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                btn.classList.add('active');
+                document.getElementById(tabName + 'Tab').classList.add('active');
+                
+                // Update preview when switching to preview tab
+                if (tabName === 'preview') {
+                    updatePreview();
+                }
+            });
+        });
+
+        // HTML Preview functionality
+        function updatePreview() {
+            const htmlContent = htmlBody.value.trim();
+            if (htmlContent) {
+                htmlPreview.innerHTML = htmlContent;
+            } else {
+                htmlPreview.innerHTML = '<div class="preview-placeholder">HTML 코드를 입력하면 여기에 미리보기가 표시됩니다.</div>';
+            }
+        }
+
+        // Real-time preview update
+        htmlBody.addEventListener('input', () => {
+            if (document.querySelector('[data-tab="preview"]').classList.contains('active')) {
+                updatePreview();
+            }
+        });
+
+        // Text to HTML conversion
+        textToHtmlBtn.addEventListener('click', () => {
+            const textContent = textBody.value.trim();
+            if (!textContent) {
+                alert('텍스트를 먼저 입력해주세요.');
+                return;
+            }
+            
+            const htmlContent = convertTextToHtml(textContent);
+            htmlBody.value = htmlContent;
+            
+            // Switch to HTML tab
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector('[data-tab="html"]').classList.add('active');
+            document.getElementById('htmlTab').classList.add('active');
+            
+            statusDiv.innerHTML += `텍스트가 HTML로 변환되었습니다.\n`;
+        });
+
+        // HTML to Text conversion
+        htmlToTextBtn.addEventListener('click', () => {
+            const htmlContent = htmlBody.value.trim();
+            if (!htmlContent) {
+                alert('HTML 코드를 먼저 입력해주세요.');
+                return;
+            }
+            
+            const textContent = convertHtmlToText(htmlContent);
+            textBody.value = textContent;
+            statusDiv.innerHTML += `HTML이 텍스트로 변환되었습니다.\n`;
+        });
+
+        // Text to HTML conversion function
+        function convertTextToHtml(text) {
+            const lines = text.split('\n');
+            let html = '<html>\n<head>\n    <meta charset="UTF-8">\n    <title>메일</title>\n</head>\n<body>\n';
+            
+            for (let line of lines) {
+                line = line.trim();
+                if (line === '') {
+                    html += '    <br>\n';
+                } else if (line.startsWith('# ')) {
+                    html += `    <h1>${line.substring(2)}</h1>\n`;
+                } else if (line.startsWith('## ')) {
+                    html += `    <h2>${line.substring(3)}</h2>\n`;
+                } else if (line.startsWith('### ')) {
+                    html += `    <h3>${line.substring(4)}</h3>\n`;
+                } else if (line.startsWith('- ')) {
+                    html += `    <li>${line.substring(2)}</li>\n`;
+                } else if (line.includes('http://') || line.includes('https://')) {
+                    const urlRegex = /(https?:\/\/[^\s]+)/g;
+                    const linkedText = line.replace(urlRegex, '<a href="$1">$1</a>');
+                    html += `    <p>${linkedText}</p>\n`;
+                } else {
+                    html += `    <p>${line}</p>\n`;
+                }
+            }
+            
+            html += '</body>\n</html>';
+            return html;
+        }
+
+        // HTML to Text conversion function
+        function convertHtmlToText(html) {
+            // Create a temporary div to parse HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Remove script and style elements
+            const scripts = tempDiv.querySelectorAll('script, style');
+            scripts.forEach(el => el.remove());
+            
+            // Get text content and clean it up
+            let text = tempDiv.textContent || tempDiv.innerText || '';
+            
+            // Clean up extra whitespace
+            text = text.replace(/\s+/g, ' ').trim();
+            
+            // Add line breaks for better readability
+            text = text.replace(/\. /g, '.\n');
+            
+            return text;
+        }
+
+        // Excel 업로드 관련 이벤트
+        uploadArea.addEventListener('click', () => excelFile.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                excelFile.files = files;
+                handleExcelUpload(files[0]);
+            }
+        });
+        
+        excelFile.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleExcelUpload(e.target.files[0]);
+            }
+        });
+        
+        async function handleExcelUpload(file) {
+            const formData = new FormData();
+            formData.append('excelFile', file);
+            
+            try {
+                // Handle Korean filename display properly
+                const displayName = file.name;
+                statusDiv.innerHTML += `파일 업로드 중: ${displayName}\n`;
+                
+                const response = await fetch('/upload-excel', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                // Check if response is ok
+                if (!response.ok) {
+                    throw new Error(`서버 오류: ${response.status} ${response.statusText}`);
+                }
+                
+                // Check content type
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const textResponse = await response.text();
+                    throw new Error(`서버에서 JSON이 아닌 응답을 받았습니다: ${textResponse.substring(0, 100)}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success && result.emails) {
+                    // Store as JSON for template variable support
+                    recipients.value = JSON.stringify(result.emails);
+                    updateEmailCount();
+                    statusDiv.innerHTML += `${result.message}\n`;
+                    
+                    // Show column info if available
+                    if (result.emails.length > 0) {
+                        const sampleEmail = result.emails[0];
+                        statusDiv.innerHTML += `추출된 정보: 이메일${sampleEmail.name ? ', 이름' : ''}${sampleEmail.dept ? ', 부서' : ''}\n`;
+                    }
+                } else {
+                    statusDiv.innerHTML += `파일 업로드 오류: ${result.error}\n`;
+                    if (result.details) {
+                        statusDiv.innerHTML += `상세: ${result.details}\n`;
+                    }
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                statusDiv.innerHTML += `파일 업로드 실패: ${error.message}\n`;
+            }
+        }
+        
+        function updateEmailCount() {
+            try {
+                // Try to parse as JSON (from Excel upload)
+                const parsedData = JSON.parse(recipients.value);
+                if (Array.isArray(parsedData)) {
+                    countNumber.textContent = parsedData.length;
+                    emailCount.style.display = 'block';
+                    return;
+                }
+            } catch {
+                // Parse as plain text (manual input)
+                const emailList = recipients.value.split(/\s*,\s*|\s*\n\s*/).filter(email => email.trim());
+                if (emailList.length > 0) {
+                    countNumber.textContent = emailList.length;
+                    emailCount.style.display = 'block';
+                } else {
+                    emailCount.style.display = 'none';
+                }
+            }
+        }
+        
+        recipients.addEventListener('input', updateEmailCount);
+        
+        // 초기화 버튼
+        clearBtn.addEventListener('click', () => {
+            form.reset();
+            emailCount.style.display = 'none';
+            statusDiv.innerHTML = '시스템 초기화 완료. 새로운 메일 발송을 시작하세요...\n';
+        });
+        
+        // 메일 발송
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '발송 중...';
+            statusDiv.innerHTML = '서버에 연결 중...\n';
+
+            const formData = new URLSearchParams(new FormData(form));
+
+            try {
+                const response = await fetch('/send', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                statusDiv.innerHTML = '메일 발송 시작!\n\n';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const chunk = decoder.decode(value, { stream: true });
+                    statusDiv.innerHTML += chunk;
+                    statusDiv.scrollTop = statusDiv.scrollHeight;
+                }
+
+            } catch (error) {
+                statusDiv.innerHTML += `\n 클라이언트 오류: ${error.message}`;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '발송 시작';
+            }
+        });
+    </script>
+</body>
+</html>
+
