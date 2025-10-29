@@ -223,17 +223,6 @@ tail -f /var/log/apache2/error.log
 tail -f /var/log/apache2/access.log
 ```
 
-## 🔒 보안 고려사항
-
-### Gmail 앱 비밀번호
-- 앱 비밀번호를 코드에 하드코딩하지 마세요
-- 환경 변수 또는 별도 설정 파일 사용 권장
-- 정기적으로 앱 비밀번호 갱신
-
-### 파일 업로드
-- uploads/ 디렉토리 권한 설정 (755)
-- 업로드 파일 크기 제한
-- 허용된 파일 형식만 업로드
 
 ### 서버 보안
 ```bash
@@ -244,7 +233,7 @@ sudo ufw allow 3000
 pm2 start server.js --name "mail-sender"
 ```
 
-## 📊 성능 최적화
+## 성능 최적화
 
 ### 발송 속도 조절
 ```javascript
@@ -260,4 +249,3 @@ ps aux | grep node
 # 시스템 리소스 모니터링
 htop
 ```
-**⚠️ 주의사항**: 이 도구는 APT 보안 훈련 목적으로만 사용하세요. 스팸 메일 발송이나 악의적인 목적으로 사용하지 마세요.
